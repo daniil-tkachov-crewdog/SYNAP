@@ -1,0 +1,40 @@
+{
+  "name": "@synap/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.47.10",
+    "@synap/db": "workspace:*",
+    "@synap/types": "workspace:*",
+    "@tanstack/react-query": "^5.64.1",
+    "next": "^15.1.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.3",
+    "lucide-react": "^0.469.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0",
+    "openai": "^4.77.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6",
+    "@types/react": "^19.0.3",
+    "@types/react-dom": "^19.0.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "*",
+    "eslint": "*",
+    "eslint-config-next": "^15.1.3",
+    "prettier-plugin-tailwindcss": "^0.6.9"
+  }
+}
