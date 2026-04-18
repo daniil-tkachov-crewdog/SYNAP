@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "Synap",
+  "version": "0.1.0",
+  "description": "All your AIs, one place. Chat with ChatGPT and Claude from a single unified interface.",
+
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "sidePanel",
+    "activeTab"
+  ],
+
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://synap.app/*"
+  ],
+
+  "externally_connectable": {
+    "matches": [
+      "https://synap.app/*",
+      "http://localhost:3000/*"
+    ]
+  },
+
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["src/content/chatgpt/index.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["src/content/claude/index.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "Synap"
+  },
+
+  "side_panel": {
+    "default_path": "src/sidebar/index.html"
+  },
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
