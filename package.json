@@ -3,10 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "turbo run dev --filter=web --filter=extension",
+    "dev": "turbo run dev --filter=@synap/web --filter=@synap/extension",
     "build": "turbo run build",
-    "build:web": "turbo run build --filter=web",
-    "build:extension": "turbo run build --filter=extension",
+    "build:web": "turbo run build --filter=@synap/web",
+    "build:extension": "turbo run build --filter=@synap/extension",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",
