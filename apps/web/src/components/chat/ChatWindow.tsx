@@ -48,16 +48,19 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as DbMessage
             setMessages((prev) => {
-              const exists = prev.find((m) => m.id === payload.new.id)
+              const exists = prev.find((m) => m.id === newMsg.id)
               if (exists) return prev
-              return [...prev, payload.new as DbMessage]
+              return [...prev, newMsg]
             })
-            setSending(false)
+            if (newMsg.role === 'assistant') setSending(false)
           } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as DbMessage
             setMessages((prev) =>
-              prev.map((m) => (m.id === payload.new.id ? (payload.new as DbMessage) : m))
+              prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
             )
+            if (updatedMsg.role === 'assistant') setSending(false)
           }
         }
       )

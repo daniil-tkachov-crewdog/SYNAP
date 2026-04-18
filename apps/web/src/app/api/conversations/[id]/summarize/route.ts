@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: Params) {
   // Get last 20 messages for summarization
   const { data: messages } = await supabase
     .from('messages')
-    .select('role, content, ai_provider')
+    .select('role,content,ai_provider')
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id)
     .eq('is_context_summary', false)

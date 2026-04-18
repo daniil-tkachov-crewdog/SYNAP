@@ -9,7 +9,7 @@ async function buildMemoryPrefix(
 ): Promise<string> {
   const { data: facts } = await supabase
     .from('memory_facts')
-    .select('key, value, category')
+    .select('*')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('category')
