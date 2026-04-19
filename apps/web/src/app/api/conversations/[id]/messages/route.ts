@@ -62,18 +62,37 @@ export async function POST(request: Request, { params }: Params) {
 
   if (!conversation) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Build memory prefix if this is the first message
-  let memoryPrefix = ''
+  // Build prefix on the first message of a new session (memory_injected is false after
+  // conversation start or after an AI switch)
   let memoryInjected = conversation.memory_injected
+  let fullMessage = body.content
 
   if (!conversation.memory_injected) {
-    memoryPrefix = await buildMemoryPrefix(supabase, user.id)
+    const [memoryPrefix, ctxSummaryResult] = await Promise.all([
+      buildMemoryPrefix(supabase, user.id),
+      supabase
+        .from('messages')
+        .select('content')
+        .eq('conversation_id', conversationId)
+        .eq('is_context_summary', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+    const parts: string[] = []
+    if (ctxSummaryResult.data?.content) {
+      parts.push(`[Context from previous AI]\n${ctxSummaryResult.data.content}`)
+    }
     if (memoryPrefix) {
+      parts.push(memoryPrefix.trimEnd())
+    }
+
+    if (parts.length > 0) {
+      fullMessage = `${parts.join('\n\n')}\n\n${body.content}`
       memoryInjected = true
     }
   }
-
-  const fullMessage = memoryPrefix ? `${memoryPrefix}${body.content}` : body.content
 
   // Insert user message
   const { data: userMessage, error: msgError } = await supabase
