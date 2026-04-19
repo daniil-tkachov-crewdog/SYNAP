@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { UpdateMemoryFactRequest } from '@synap/types'
+import type { UpdateMemoryFactRequest, MemoryFact } from '@synap/types'
+
+function toMemoryFact(row: {
+  id: string; user_id: string; category: string; key: string;
+  value: string; is_active: boolean; created_at: string; updated_at: string;
+}): MemoryFact {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    category: row.category as MemoryFact['category'],
+    key: row.key,
+    value: row.value,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
 
 interface Params {
   params: Promise<{ id: string }>
@@ -30,7 +46,7 @@ export async function PUT(request: Request, { params }: Params) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  return NextResponse.json(toMemoryFact(data))
 }
 
 export async function DELETE(_req: Request, { params }: Params) {

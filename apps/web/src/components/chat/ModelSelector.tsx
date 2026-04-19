@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils'
 import { AI_PROVIDERS } from '@synap/types'
 import type { AIProvider } from '@synap/types'
 
-const MVP_PROVIDERS: AIProvider[] = ['chatgpt', 'claude']
-
 interface Props {
   value: AIProvider
   onChange: (ai: AIProvider) => void
@@ -39,7 +37,7 @@ export function ModelSelector({ value, onChange, disabled }: Props) {
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute bottom-full left-0 z-20 mb-2 min-w-[160px] overflow-hidden rounded-xl border border-white/10 bg-slate-900 shadow-xl">
-            {MVP_PROVIDERS.map((provider) => {
+            {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => {
               const info = AI_PROVIDERS[provider]
               const isActive = provider === value
               return (
