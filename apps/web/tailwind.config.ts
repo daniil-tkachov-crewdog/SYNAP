@@ -5,6 +5,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        border: 'hsl(var(--border))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         synap: {
           50: '#f0f4ff',
           100: '#e0e9ff',
@@ -13,6 +16,16 @@ const config: Config = {
           700: '#4338ca',
           900: '#1e1b4b',
         },
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        card: 'hsl(var(--card))',
+        'card-foreground': 'hsl(var(--card-foreground))',
+        muted: 'hsl(var(--muted))',
+        'muted-foreground': 'hsl(var(--muted-foreground))',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        primary: 'hsl(var(--primary))',
+        'primary-foreground': 'hsl(var(--primary-foreground))',
       },
       fontFamily: {
         sans: ['var(--font-inter)'],

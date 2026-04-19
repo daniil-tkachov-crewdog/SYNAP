@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import type { ExtensionWebhookPayload } from '@synap/types'
+import type { Database } from '@synap/db'
 import { generateId } from '@/lib/utils'
 
 export async function POST(request: Request) {
@@ -11,12 +12,16 @@ export async function POST(request: Request) {
 
   const token = authHeader.slice(7)
 
-  // Use service client to verify the JWT and get user
-  const supabase = await createServiceClient()
+  // Create a client authenticated with the user's JWT — RLS applies normally
+  const supabase = createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { global: { headers: { Authorization: `Bearer ${token}` } } }
+  )
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser(token)
+  } = await supabase.auth.getUser()
 
   if (authError || !user) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })

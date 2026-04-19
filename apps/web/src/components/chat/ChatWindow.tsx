@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { AlertTriangleIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useChatStore } from '@/store/chatStore'
 import { MessageList } from './MessageList'
 import { InputBar } from './InputBar'
 import { ContextSwitchBanner } from './ContextSwitchBanner'
-import type { Conversation, Message, AIProvider } from '@synap/types'
+import type { AIProvider } from '@synap/types'
 import type { Database } from '@synap/db'
 
 type DbConversation = Database['public']['Tables']['conversations']['Row']
@@ -28,6 +30,7 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
 
   const [messages, setMessages] = useState<DbMessage[]>(initialMessages)
   const [switching, setSwitching] = useState(false)
+  const [extensionError, setExtensionError] = useState<string | null>(null)
 
   // Keep active AI in sync with conversation
   useEffect(() => {
@@ -48,16 +51,19 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as DbMessage
             setMessages((prev) => {
-              const exists = prev.find((m) => m.id === payload.new.id)
+              const exists = prev.find((m) => m.id === newMsg.id)
               if (exists) return prev
-              return [...prev, payload.new as DbMessage]
+              return [...prev, newMsg]
             })
-            setSending(false)
+            if (newMsg.role === 'assistant') setSending(false)
           } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as DbMessage
             setMessages((prev) =>
-              prev.map((m) => (m.id === payload.new.id ? (payload.new as DbMessage) : m))
+              prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
             )
+            if (updatedMsg.role === 'assistant') setSending(false)
           }
         }
       )
@@ -74,6 +80,7 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
   }, [messages])
 
   async function handleSend(content: string, aiProvider: AIProvider) {
+    setExtensionError(null)
     setSending(true)
 
     // Optimistic user message
@@ -124,11 +131,13 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
           (response) => {
             if (window.chrome.runtime.lastError || !response?.requestId) {
               setSending(false)
+              setExtensionError('Extension not connected — install it to send messages.')
             }
           }
         )
       } else {
         setSending(false)
+        setExtensionError('Extension not connected — install it to send messages.')
       }
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id))
@@ -155,6 +164,15 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
       {switching && <ContextSwitchBanner />}
       <MessageList messages={messages} />
       <div ref={bottomRef} />
+      {extensionError && (
+        <div className="mx-4 mb-2 flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs text-amber-400">
+          <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1">{extensionError}</span>
+          <Link href="/settings/extension" className="underline opacity-80 hover:opacity-100">
+            Settings →
+          </Link>
+        </div>
+      )}
       <InputBar
         conversationId={conversation.id}
         currentAI={conversation.current_ai as AIProvider}

@@ -10,16 +10,16 @@ export default async function ChatIndexPage() {
   if (!user) redirect('/login')
 
   // Find most recent conversation or go to new chat
-  const { data: latest } = await supabase
+  const { data: conversations } = await supabase
     .from('conversations')
-    .select('id')
+    .select('id,created_at')
     .eq('user_id', user.id)
-    .order('last_message_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(1)
-    .single()
 
-  if (latest) {
-    redirect(`/chat/${latest.id}`)
+  const latestId = (conversations as Array<{ id: string }> | null)?.[0]?.id
+  if (latestId) {
+    redirect(`/chat/${latestId}`)
   }
 
   // No conversations yet — show empty state

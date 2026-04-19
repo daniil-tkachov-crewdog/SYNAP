@@ -16,7 +16,8 @@
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",
-    "https://synap.app/*"
+    "https://synap.app/*",
+    "http://localhost:3000/*"
   ],
 
   "externally_connectable": {

@@ -29,6 +29,7 @@ export interface Database {
           avatar_url?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       memory_facts: {
         Row: {
@@ -58,6 +59,7 @@ export interface Database {
           is_active?: boolean
           updated_at?: string
         }
+        Relationships: []
       }
       conversations: {
         Row: {
@@ -87,6 +89,7 @@ export interface Database {
           last_message_at?: string | null
           updated_at?: string
         }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -115,6 +118,7 @@ export interface Database {
           content?: string
           metadata?: Json
         }
+        Relationships: []
       }
     }
     Views: Record<string, never>

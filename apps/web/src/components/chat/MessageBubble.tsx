@@ -47,7 +47,15 @@ export function MessageBubble({ message }: Props) {
             : 'bg-white/8 text-white/90 rounded-tl-sm border border-white/10'
         )}
       >
-        <pre className="whitespace-pre-wrap font-sans">{message.content}</pre>
+        {!isUser && (message.metadata as Record<string, unknown>)?.pending === true ? (
+          <span className="flex items-center gap-1 py-1">
+            <span className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:-0.3s]" />
+            <span className="h-2 w-2 rounded-full bg-white/40 animate-bounce [animation-delay:-0.15s]" />
+            <span className="h-2 w-2 rounded-full bg-white/40 animate-bounce" />
+          </span>
+        ) : (
+          <pre className="whitespace-pre-wrap font-sans">{message.content}</pre>
+        )}
         {!isUser && aiInfo && (
           <div className="mt-2 text-xs opacity-40">{aiInfo.name}</div>
         )}
