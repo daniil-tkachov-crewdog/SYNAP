@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { QueryProvider } from '@/components/providers/QueryProvider'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const {

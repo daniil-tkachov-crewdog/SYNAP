@@ -11,8 +11,6 @@ import { AI_PROVIDERS } from '@synap/types'
 import { ExtensionStatusBadge } from './ExtensionStatusBadge'
 import type { Conversation, AIProvider } from '@synap/types'
 
-const MVP_PROVIDERS: AIProvider[] = ['chatgpt', 'claude']
-
 interface Props {
   userId: string
 }
@@ -81,7 +79,7 @@ export function AppSidebar({ userId }: Props) {
           <>
             <div className="fixed inset-0 z-10" onClick={() => setPickerOpen(false)} />
             <div className="absolute left-3 right-3 top-full z-20 mt-1 overflow-hidden rounded-xl border border-white/10 bg-slate-900 shadow-xl">
-              {MVP_PROVIDERS.map((provider) => {
+              {(Object.keys(AI_PROVIDERS) as AIProvider[]).map((provider) => {
                 const info = AI_PROVIDERS[provider]
                 return (
                   <button
