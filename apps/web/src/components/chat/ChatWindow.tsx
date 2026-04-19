@@ -7,7 +7,7 @@ import { useChatStore } from '@/store/chatStore'
 import { MessageList } from './MessageList'
 import { InputBar } from './InputBar'
 import { ContextSwitchBanner } from './ContextSwitchBanner'
-import type { Conversation, Message, AIProvider } from '@synap/types'
+import type { AIProvider } from '@synap/types'
 import type { Database } from '@synap/db'
 
 type DbConversation = Database['public']['Tables']['conversations']['Row']
@@ -29,6 +29,10 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
   const [messages, setMessages] = useState<DbMessage[]>(initialMessages)
   const [switching, setSwitching] = useState(false)
 
+  // Refs avoid stale closures in async callbacks
+  const isSwitchingRef = useRef(false)
+  const switchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   // Keep active AI in sync with conversation
   useEffect(() => {
     setActiveAI(conversation.current_ai as AIProvider)
@@ -48,11 +52,22 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as DbMessage
             setMessages((prev) => {
-              const exists = prev.find((m) => m.id === payload.new.id)
+              const exists = prev.find((m) => m.id === newMsg.id)
               if (exists) return prev
-              return [...prev, payload.new as DbMessage]
+              return [...prev, newMsg]
             })
+
+            // Context summary arriving signals that the AI switch is complete
+            if (newMsg.is_context_summary && isSwitchingRef.current) {
+              clearTimeout(switchTimeoutRef.current ?? undefined)
+              isSwitchingRef.current = false
+              setSwitching(false)
+              router.refresh()
+              return
+            }
+
             setSending(false)
           } else if (payload.eventType === 'UPDATE') {
             setMessages((prev) =>
@@ -65,8 +80,9 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
 
     return () => {
       supabase.removeChannel(channel)
+      clearTimeout(switchTimeoutRef.current ?? undefined)
     }
-  }, [conversation.id, supabase, setSending])
+  }, [conversation.id, supabase, setSending, router])
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -104,7 +120,6 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
       // Remove optimistic message (Realtime will add the real one)
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id))
 
-      // Send to extension
       const { session } = (await supabase.auth.getSession()).data
       if (session && window.chrome?.runtime) {
         const extensionId = process.env.NEXT_PUBLIC_EXTENSION_ID!
@@ -137,16 +152,75 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
   }
 
   async function handleSwitchAI(newAI: AIProvider) {
+    isSwitchingRef.current = true
     setSwitching(true)
+
     try {
-      await fetch(`/api/conversations/${conversation.id}/summarize`, {
+      const res = await fetch(`/api/conversations/${conversation.id}/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newAiProvider: newAI }),
       })
-      router.refresh()
-    } finally {
+
+      if (!res.ok) throw new Error('Summarize request failed')
+
+      const data = await res.json()
+
+      // No messages to summarize — AI was already switched server-side
+      if (data.skipSummary) {
+        isSwitchingRef.current = false
+        setSwitching(false)
+        router.refresh()
+        return
+      }
+
+      const { session } = (await supabase.auth.getSession()).data
+      if (!session || !window.chrome?.runtime) {
+        // Extension unavailable — AI already switched server-side, just refresh
+        isSwitchingRef.current = false
+        setSwitching(false)
+        router.refresh()
+        return
+      }
+
+      // Timeout fallback: unblock UI if summary never arrives
+      switchTimeoutRef.current = setTimeout(() => {
+        if (isSwitchingRef.current) {
+          isSwitchingRef.current = false
+          setSwitching(false)
+          router.refresh()
+        }
+      }, 130_000)
+
+      const extensionId = process.env.NEXT_PUBLIC_EXTENSION_ID!
+      window.chrome.runtime.sendMessage(
+        extensionId,
+        {
+          type: 'SEND_MESSAGE',
+          payload: {
+            requestId: data.requestId,
+            conversationId: conversation.id,
+            aiProvider: data.previousAi,
+            fullMessage: data.summaryPrompt,
+            authToken: session.access_token,
+            webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/summarize`,
+          },
+        },
+        (response) => {
+          if (window.chrome.runtime.lastError || !response?.requestId) {
+            // Extension rejected — unblock immediately
+            clearTimeout(switchTimeoutRef.current ?? undefined)
+            isSwitchingRef.current = false
+            setSwitching(false)
+            router.refresh()
+          }
+          // Otherwise the banner stays up; Realtime dismisses it when summary arrives
+        }
+      )
+    } catch {
+      isSwitchingRef.current = false
       setSwitching(false)
+      router.refresh()
     }
   }
 
@@ -159,6 +233,7 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
         conversationId={conversation.id}
         currentAI={conversation.current_ai as AIProvider}
         isSending={isSending}
+        isSwitching={switching}
         onSend={handleSend}
         onSwitchAI={handleSwitchAI}
       />

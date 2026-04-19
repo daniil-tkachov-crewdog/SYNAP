@@ -12,18 +12,19 @@ interface Props {
   conversationId: string
   currentAI: AIProvider
   isSending: boolean
+  isSwitching: boolean
   onSend: (content: string, aiProvider: AIProvider) => void
   onSwitchAI: (newAI: AIProvider) => void
 }
 
-export function InputBar({ currentAI, isSending, onSend, onSwitchAI }: Props) {
+export function InputBar({ currentAI, isSending, isSwitching, onSend, onSwitchAI }: Props) {
   const [text, setText] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
     const trimmed = text.trim()
-    if (!trimmed || isSending) return
+    if (!trimmed || isSending || isSwitching) return
     onSend(trimmed, currentAI)
     setText('')
     if (textareaRef.current) {
@@ -51,7 +52,7 @@ export function InputBar({ currentAI, isSending, onSend, onSwitchAI }: Props) {
     <div className="border-t border-white/10 px-4 py-4">
       {isSending && <StreamingIndicator aiName={aiInfo.name} />}
       <form onSubmit={handleSubmit} className="flex items-end gap-3">
-        <ModelSelector value={currentAI} onChange={onSwitchAI} disabled={isSending} />
+        <ModelSelector value={currentAI} onChange={onSwitchAI} disabled={isSending || isSwitching} />
         <div className="relative flex-1">
           <textarea
             ref={textareaRef}
@@ -60,7 +61,7 @@ export function InputBar({ currentAI, isSending, onSend, onSwitchAI }: Props) {
             onKeyDown={handleKeyDown}
             placeholder={`Message ${aiInfo.name}…`}
             rows={1}
-            disabled={isSending}
+            disabled={isSending || isSwitching}
             className={cn(
               'w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 outline-none transition focus:border-synap-500 focus:ring-1 focus:ring-synap-500 disabled:opacity-50',
               'max-h-[200px] overflow-y-auto'
@@ -68,7 +69,7 @@ export function InputBar({ currentAI, isSending, onSend, onSwitchAI }: Props) {
           />
           <button
             type="submit"
-            disabled={!text.trim() || isSending}
+            disabled={!text.trim() || isSending || isSwitching}
             className="absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-synap-600 text-white transition hover:bg-synap-700 disabled:opacity-30"
           >
             <SendIcon className="h-3.5 w-3.5" />
