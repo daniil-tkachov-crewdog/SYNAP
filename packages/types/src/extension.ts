@@ -28,6 +28,16 @@ export type WebToExtensionMessage =
     }
   | { type: 'OPEN_AI_TAB'; payload: { aiProvider: AIProvider } }
   | { type: 'CAPTURE_CONVERSATION'; payload: { aiProvider: AIProvider } }
+  | {
+      type: 'SYNC_AUTH'
+      payload: {
+        accessToken: string
+        refreshToken: string
+        supabaseUrl: string
+        supabaseAnonKey: string
+        appUrl: string
+      }
+    }
 
 // ─── Extension → Web App (sync response to sendMessage) ──────────────────────
 
@@ -58,6 +68,17 @@ export type ContentToBGMessage =
   | { type: 'RESPONSE_ERROR'; requestId: string; error: string }
   | { type: 'CONVERSATION_EXTRACTED'; messages: Array<{ role: string; content: string }> }
   | { type: 'KEEPALIVE' }
+  | {
+      type: 'SEND_MESSAGE'
+      payload: {
+        requestId: string
+        conversationId: string
+        aiProvider: AIProvider
+        fullMessage: string
+        authToken: string
+        webhookUrl: string
+      }
+    }
 
 // ─── Internal Extension State ─────────────────────────────────────────────────
 
