@@ -28,6 +28,38 @@ chrome.runtime.onMessageExternal.addListener(
   }
 )
 
+async function executeSendMessage(payload: {
+  requestId: string
+  conversationId: string
+  aiProvider: string
+  fullMessage: string
+  authToken: string
+  webhookUrl: string
+}) {
+  const { requestId, conversationId, aiProvider, fullMessage, authToken, webhookUrl } = payload
+  const request: PendingRequest = {
+    requestId,
+    conversationId,
+    aiProvider: aiProvider as AIProvider,
+    fullMessage,
+    authToken,
+    webhookUrl,
+    status: 'queued',
+    createdAt: Date.now(),
+  }
+  await SessionStore.setPendingRequest(request)
+  const controller = controllers[aiProvider as keyof typeof controllers]
+  if (!controller) {
+    await postError(request, `Unsupported AI provider: ${aiProvider}`)
+    return
+  }
+  try {
+    await controller.execute(request)
+  } catch (err) {
+    await postError(request, err instanceof Error ? err.message : 'Unknown error')
+  }
+}
+
 async function handleWebMessage(
   message: WebToExtensionMessage,
   sendResponse: (r: ExtensionToWebResponse) => void
@@ -46,34 +78,14 @@ async function handleWebMessage(
     }
 
     case 'SEND_MESSAGE': {
-      const { requestId, conversationId, aiProvider, fullMessage, authToken, webhookUrl } =
-        message.payload
+      sendResponse({ type: 'MESSAGE_QUEUED', requestId: message.payload.requestId })
+      await executeSendMessage(message.payload)
+      break
+    }
 
-      const request: PendingRequest = {
-        requestId,
-        conversationId,
-        aiProvider,
-        fullMessage,
-        authToken,
-        webhookUrl,
-        status: 'queued',
-        createdAt: Date.now(),
-      }
-
-      await SessionStore.setPendingRequest(request)
-      sendResponse({ type: 'MESSAGE_QUEUED', requestId })
-
-      const controller = controllers[aiProvider as keyof typeof controllers]
-      if (!controller) {
-        await postError(request, `Unsupported AI provider: ${aiProvider}`)
-        return
-      }
-
-      try {
-        await controller.execute(request)
-      } catch (err) {
-        await postError(request, err instanceof Error ? err.message : 'Unknown error')
-      }
+    case 'SYNC_AUTH': {
+      await chrome.storage.local.set({ synapAuth: message.payload })
+      sendResponse({ type: 'PONG', ok: true, version: EXTENSION_VERSION })
       break
     }
 
@@ -95,9 +107,14 @@ async function handleWebMessage(
   }
 }
 
-// ─── From Content Scripts ─────────────────────────────────────────────────────
+// ─── From Content Scripts + Sidebar (internal) ───────────────────────────────
 
 chrome.runtime.onMessage.addListener((message: ContentToBGMessage, _sender, sendResponse) => {
+  if (message.type === 'SEND_MESSAGE') {
+    executeSendMessage(message.payload)
+    sendResponse({ type: 'MESSAGE_QUEUED', requestId: message.payload.requestId })
+    return false
+  }
   handleContentMessage(message)
   sendResponse({ ok: true })
   return false

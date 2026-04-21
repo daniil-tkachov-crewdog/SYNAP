@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createBearerClient, extractBearerToken } from '@/lib/supabase/fromBearer'
 import type { SendMessageRequest, SendMessageResponse } from '@synap/types'
 import { generateId } from '@/lib/utils'
 
@@ -24,9 +25,10 @@ interface Params {
   params: Promise<{ id: string }>
 }
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   const { id } = await params
-  const supabase = await createClient()
+  const token = extractBearerToken(req)
+  const supabase = token ? createBearerClient(token) : await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -44,7 +46,8 @@ export async function GET(_req: Request, { params }: Params) {
 
 export async function POST(request: Request, { params }: Params) {
   const { id: conversationId } = await params
-  const supabase = await createClient()
+  const token = extractBearerToken(request)
+  const supabase = token ? createBearerClient(token) : await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

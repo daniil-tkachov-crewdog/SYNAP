@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createBearerClient, extractBearerToken } from '@/lib/supabase/fromBearer'
 import type { CreateMemoryFactRequest } from '@synap/types'
 
-export async function GET() {
-  const supabase = await createClient()
+export async function GET(request: Request) {
+  const token = extractBearerToken(request)
+  const supabase = token ? createBearerClient(token) : await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
