@@ -24,6 +24,7 @@ export type WebToExtensionMessage =
         fullMessage: string
         authToken: string
         webhookUrl: string
+        isSummary?: boolean
       }
     }
   | { type: 'OPEN_AI_TAB'; payload: { aiProvider: AIProvider } }
@@ -70,6 +71,7 @@ export interface PendingRequest {
   fullMessage: string
   authToken: string
   webhookUrl: string
+  isSummary?: boolean
   tabId?: number
   status: RequestStatus
   createdAt: number
@@ -91,4 +93,5 @@ export interface ExtensionWebhookPayload {
   isPartial?: boolean
   isError?: boolean
   errorMessage?: string
+  isSummary?: boolean
 }

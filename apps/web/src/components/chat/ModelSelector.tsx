@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils'
 import { AI_PROVIDERS } from '@synap/types'
 import type { AIProvider } from '@synap/types'
 
-const MVP_PROVIDERS: AIProvider[] = ['chatgpt', 'claude']
-
 interface Props {
   value: AIProvider
   onChange: (ai: AIProvider) => void
@@ -39,18 +37,23 @@ export function ModelSelector({ value, onChange, disabled }: Props) {
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute bottom-full left-0 z-20 mb-2 min-w-[160px] overflow-hidden rounded-xl border border-white/10 bg-slate-900 shadow-xl">
-            {MVP_PROVIDERS.map((provider) => {
-              const info = AI_PROVIDERS[provider]
+            {(Object.entries(AI_PROVIDERS) as [AIProvider, typeof AI_PROVIDERS[AIProvider]][]).map(([provider, info]) => {
               const isActive = provider === value
+              const isComingSoon = info.status === 'coming_soon'
               return (
                 <button
                   key={provider}
                   onClick={() => {
+                    if (isComingSoon) return
                     setOpen(false)
                     if (provider !== value) onChange(provider)
                   }}
+                  disabled={isComingSoon}
                   className={cn(
-                    'flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition hover:bg-white/5',
+                    'flex w-full items-center gap-2.5 px-3 py-2.5 text-sm transition',
+                    isComingSoon
+                      ? 'cursor-not-allowed opacity-40'
+                      : 'hover:bg-white/5',
                     isActive ? 'text-white' : 'text-white/70'
                   )}
                 >
@@ -59,7 +62,12 @@ export function ModelSelector({ value, onChange, disabled }: Props) {
                     style={{ backgroundColor: info.color }}
                   />
                   {info.name}
-                  {isActive && <span className="ml-auto text-xs text-white/30">active</span>}
+                  {isActive && !isComingSoon && (
+                    <span className="ml-auto text-xs text-white/30">active</span>
+                  )}
+                  {isComingSoon && (
+                    <span className="ml-auto text-xs text-white/30">soon</span>
+                  )}
                 </button>
               )
             })}

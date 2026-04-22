@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: synap-web
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm build:web
+    startCommand: pnpm --filter @synap/web start
+    autoDeploy: true
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_EXTENSION_ID
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false

@@ -46,7 +46,7 @@ async function handleWebMessage(
     }
 
     case 'SEND_MESSAGE': {
-      const { requestId, conversationId, aiProvider, fullMessage, authToken, webhookUrl } =
+      const { requestId, conversationId, aiProvider, fullMessage, authToken, webhookUrl, isSummary } =
         message.payload
 
       const request: PendingRequest = {
@@ -56,6 +56,7 @@ async function handleWebMessage(
         fullMessage,
         authToken,
         webhookUrl,
+        isSummary,
         status: 'queued',
         createdAt: Date.now(),
       }
@@ -158,6 +159,7 @@ async function postWebhook(request: PendingRequest, content: string, isPartial: 
         aiProvider: request.aiProvider,
         content,
         isPartial,
+        isSummary: request.isSummary,
       }),
     })
   } catch (err) {

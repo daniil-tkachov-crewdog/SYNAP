@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import OpenAI from 'openai'
 import type { AIProvider } from '@synap/types'
-import { generateId } from '@/lib/utils'
+import { randomUUID } from 'crypto'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -44,45 +43,19 @@ export async function POST(request: Request, { params }: Params) {
   const previousAi = conversation.current_ai
   const chronological = [...messages].reverse()
 
-  // Generate summary via OpenAI
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-  const summaryPrompt = chronological
+  // Build the summarization prompt — sent to the previous AI via the extension
+  const conversationText = chronological
     .map((m) => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content}`)
     .join('\n')
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'system',
-        content:
-          'Summarize the following conversation concisely. Focus on: what the user was trying to accomplish, key decisions made, important context, and any code or specific details discussed. Be brief but complete.',
-      },
-      { role: 'user', content: summaryPrompt },
-    ],
-    max_tokens: 500,
-  })
+  const summaryPrompt =
+    'Summarize the following conversation concisely. Focus on: what the user was trying to accomplish, key decisions made, important context, and any code or specific details discussed. Be brief but complete.\n\n' +
+    conversationText
 
-  const summaryText = completion.choices[0]?.message.content ?? 'No summary available.'
+  // Generate a requestId — the webhook will upsert the summary message using this as the row ID
+  const requestId = randomUUID()
 
-  const summaryContent = `[Context carried over from previous conversation with ${previousAi}]\n${summaryText}`
-
-  // Insert the context summary as a system message
-  const { data: summaryMessage } = await supabase
-    .from('messages')
-    .insert({
-      id: generateId(),
-      conversation_id: conversationId,
-      user_id: user.id,
-      role: 'system',
-      content: summaryContent,
-      is_context_summary: true,
-    })
-    .select()
-    .single()
-
-  // Update conversation to new AI, reset memory_injected so memory re-injects
+  // Update conversation to new AI and reset memory injection before the client sends to extension
   await supabase
     .from('conversations')
     .update({
@@ -91,5 +64,5 @@ export async function POST(request: Request, { params }: Params) {
     })
     .eq('id', conversationId)
 
-  return NextResponse.json({ summaryMessageId: summaryMessage?.id })
+  return NextResponse.json({ requestId, summaryPrompt, previousAi })
 }

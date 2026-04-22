@@ -16,7 +16,7 @@ export function PopupApp() {
   }, [])
 
   function openSynap() {
-    chrome.tabs.create({ url: 'https://synap.app/chat' })
+    chrome.tabs.create({ url: 'https://xraylink.ai/chat' })
   }
 
   return (

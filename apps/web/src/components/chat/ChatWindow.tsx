@@ -54,6 +54,9 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
               return [...prev, payload.new as DbMessage]
             })
             setSending(false)
+            if ((payload.new as DbMessage).is_context_summary) {
+              setSwitching(false)
+            }
           } else if (payload.eventType === 'UPDATE') {
             setMessages((prev) =>
               prev.map((m) => (m.id === payload.new.id ? (payload.new as DbMessage) : m))
@@ -139,13 +142,47 @@ export function ChatWindow({ conversation, initialMessages, userId }: Props) {
   async function handleSwitchAI(newAI: AIProvider) {
     setSwitching(true)
     try {
-      await fetch(`/api/conversations/${conversation.id}/summarize`, {
+      const res = await fetch(`/api/conversations/${conversation.id}/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ newAiProvider: newAI }),
       })
+      if (!res.ok) throw new Error('Failed to summarize')
+
+      const { requestId, summaryPrompt, previousAi } = await res.json()
+
+      // Conversation current_ai already updated in DB — refresh server props
       router.refresh()
-    } finally {
+
+      // Send summary prompt to extension; response arrives via webhook → Realtime
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session && window.chrome?.runtime) {
+        const extensionId = process.env.NEXT_PUBLIC_EXTENSION_ID!
+        window.chrome.runtime.sendMessage(
+          extensionId,
+          {
+            type: 'SEND_MESSAGE',
+            payload: {
+              requestId,
+              conversationId: conversation.id,
+              aiProvider: previousAi,
+              fullMessage: summaryPrompt,
+              authToken: session.access_token,
+              webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/extension`,
+              isSummary: true,
+            },
+          },
+          () => {
+            // Fire-and-forget; switching state cleared by Realtime when summary arrives
+            if (window.chrome.runtime.lastError) {
+              setSwitching(false)
+            }
+          }
+        )
+      } else {
+        setSwitching(false)
+      }
+    } catch {
       setSwitching(false)
     }
   }

@@ -67,6 +67,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
+  if (payload.isSummary) {
+    // Store context summary as a system message
+    await supabase.from('messages').upsert(
+      {
+        id: payload.requestId,
+        conversation_id: payload.conversationId,
+        user_id: user.id,
+        role: 'system',
+        content: `[Context carried over from previous conversation with ${payload.aiProvider}]\n${payload.content}`,
+        ai_provider: payload.aiProvider,
+        is_context_summary: true,
+        metadata: { requestId: payload.requestId },
+      },
+      { onConflict: 'id' }
+    )
+    return NextResponse.json({ ok: true })
+  }
+
   // Final response — insert permanent message
   // If a partial message exists with this requestId, replace it
   await supabase.from('messages').upsert(

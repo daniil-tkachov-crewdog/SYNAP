@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Synap",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "All your AIs, one place. Chat with ChatGPT and Claude from a single unified interface.",
 
   "permissions": [
@@ -16,12 +16,12 @@
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://claude.ai/*",
-    "https://synap.app/*"
+    "https://xraylink.ai/*"
   ],
 
   "externally_connectable": {
     "matches": [
-      "https://synap.app/*",
+      "https://xraylink.ai/*",
       "http://localhost:3000/*"
     ]
   },
