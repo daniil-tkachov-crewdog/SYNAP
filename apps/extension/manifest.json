@@ -22,8 +22,7 @@
 
   "externally_connectable": {
     "matches": [
-      "https://synap.app/*",
-      "http://localhost:3000/*"
+      "https://synap-h49b.onrender.com/*"
     ]
   },
 
